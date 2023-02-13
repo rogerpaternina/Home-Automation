@@ -19,3 +19,13 @@ services:
     volumes:
       - /sys/class/power_supply:/sys/class/power_supply:ro
     restart: unless-stopped
+  
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - ./hass:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host  
