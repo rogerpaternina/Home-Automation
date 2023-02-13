@@ -29,3 +29,100 @@ services:
     restart: unless-stopped
     privileged: true
     network_mode: host  
+
+  homebridge:
+    image: oznu/homebridge:ubuntu
+    container_name: homebridge
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - HOMEBRIDGE_CONFIG_UI_PORT=8581
+    volumes:
+      - ./homebridge:/homebridge
+      
+  node-red:
+    image: nodered/node-red:latest
+    environment:
+      - TZ=Europe/Amsterdam
+    ports:
+      - "1880:1880"
+    volumes:
+      - /rapsnodered:/data
+    network_mode: host      
+      scrypted:
+        image: koush/scrypted
+        container_name: scrypted
+        restart: unless-stopped
+        network_mode: host
+        volumes:
+            - ~/.scrypted/volume:/server/volume
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "10"
+
+    # watchtower manages auto updates. this is optional.
+    watchtower:
+        image: containrrr/watchtower
+        restart: unless-stopped
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        # check for updates once an hour (interval is in seconds)
+        command: --interval 3600 --cleanup
+        
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      # Frontend port
+      - 8080:8080
+    environment:
+      - TZ=Europe/Berlin
+    devices:
+      # Make sure this matched your adapter location
+      - /dev/ttyUSB0:/dev/ttyACM0
+
+  zwavejsui:
+    container_name: zwavejsui
+    image: zwavejs/zwave-js-ui:latest
+    restart: unless-stopped
+    devices:
+      - '/dev/serial/by-id/usb-Silicon_Labs_Zooz_ZST10_700_Z-Wave_Stick_da71393558ccec11ad553fb77b8007ef-if00-port0:/dev/zwave'
+    volumes:
+      - "/home/deb/zwavejsui:/usr/src/app/store"
+    ports:
+      - "3000:3000"
+      - "8091:8091"
+
+  mqtt:
+    container_name: mosquitto
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - /docker/mosquitto/config:/mosquitto/config
+      - /docker/mosquitto/logs:/mosquitto/log
+      - /docker/mosquitto/data:/mosquitto/data
+    restart: always
+    environment:
+      - TZ=Europe/Madrid 
+
+  heimdall:
+    image: linuxserver/heimdall
+    container_name: heimdallrp2
+    volumes:
+      - /home/user/appdata/heimdall:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    ports:
+      - 82:80
+      - 444:443
+    restart: unless-stopped
